@@ -34,7 +34,12 @@ def parse_args():
     parser.add_argument('--l', dest='length', default=4, type=int)
     parser.add_argument('--actions', dest='action_names', type=str, nargs='+')
     parser.add_argument('--exp-name', default='test', type=str)
-    return parser.parse_args()
+    options = parser.parse_args()
+
+    if options.model_name == 'quickdraw' and options.data_filename == 'data.npy':
+        options.data_filename = 'data.npz'
+
+    return options
 
 
 def pick_instance(model, target_env, idx=None, false_only=True):
@@ -82,6 +87,9 @@ def run_on_instance(options, instance_id, sav_dir=None):
         env = load_env(options.model_name, options.data_filename, used_actions=options.action_names)
         model = load_model(options.model_name, options.model_ckpt)
         instance, label, instance_id = pick_instance(model, env, idx=instance_id)
+        if instance_id is None:
+        	print('Target label satisfied by original instance, stopping...')
+
         run_info = start_recording(instance_id, options)
         data, actions, features, target_label = env
         for name, feature in features.items():
