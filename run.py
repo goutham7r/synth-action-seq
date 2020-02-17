@@ -34,6 +34,7 @@ def parse_args():
     parser.add_argument('--l', dest='length', default=4, type=int)
     parser.add_argument('--actions', dest='action_names', type=str, nargs='+')
     parser.add_argument('--exp-name', default='test', type=str)
+    parser.add_argument('--instance-id', default=0, type=int)
     options = parser.parse_args()
 
     if options.model_name == 'quickdraw' and options.data_filename == 'data.npy':
@@ -192,7 +193,10 @@ if __name__ == '__main__':
     for i in range(100):
     	# Pass a sav_dir below to save separate output files for each sequence searched
     	# This is useful for running it in a distributed manner
+        a = time.time()
         output = run_on_instance(FLAGS, i, sav_dir=None)
+        tf.reset_default_graph()
+        print('Time taken for instance', time.time()-a)
 
         if FLAGS.model_name != 'quickdraw' or output['success']:
             save_filename = os.path.join(sav_dir, ('run_%s.json' % (output['idx'])))
