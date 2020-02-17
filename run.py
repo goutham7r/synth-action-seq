@@ -33,9 +33,6 @@ def parse_args():
     parser.add_argument('--mode', dest='mode', default='vanilla', type=str)
     parser.add_argument('--l', dest='length', default=4, type=int)
     parser.add_argument('--actions', dest='action_names', type=str, nargs='+')
-    parser.add_argument('--save-dir', dest='save_dir', default='test', type=str)
-    parser.add_argument('--id', dest='id', default=None, type=int)
-
     parser.add_argument('--exp-name', default='test', type=str)
     return parser.parse_args()
 
@@ -109,11 +106,10 @@ def run_on_instance(options, instance_id, sav_dir=None):
 
 
 def run_on_instance(options, instance_id, sav_dir=None):
-    print(options)
-
-    sav_dir = os.path.join(sav_dir, str(instance_id))
-    if not os.path.exists(sav_dir):
-        os.makedirs(sav_dir) 
+    if sav_dir is not None:
+	    sav_dir = os.path.join(sav_dir, str(instance_id))
+	    if not os.path.exists(sav_dir):
+	        os.makedirs(sav_dir) 
 
     with tf.Session() as session:
         env = load_env(options.model_name, options.data_filename, used_actions=options.action_names)
@@ -173,19 +169,7 @@ def end_recording(record, result):
     sys.stdout.flush()
 
     return {**record, **result}
-
-
-def save_run(options, result, i=None):
-    if i is None:
-        save_filename = str(
-            RESULTS_DIR / options.save_dir / 'solutions' / ('run_%s_%s_%d.json' % (
-                result['model'], result['mode'], result['idx'])))
-    else:
-        save_filename = str(RESULTS_DIR / options.save_dir / 'solutions' / ('run_%s_%s_%d_%d.json' % (
-            result['model'], result['mode'], result['idx'], i)))
-    save_filename = ('run_%s_%s_%d.json' % (result['model'], result['mode'], result['idx']))
-    json.dump(result, open(save_filename, 'w+'), indent=4)
-
+    
 
 if __name__ == '__main__':
     FLAGS = parse_args()
@@ -198,6 +182,10 @@ if __name__ == '__main__':
     json.dump(vars(base_config), open(os.path.join(sav_dir, 'config.json'), 'w'), indent=4)
 
     for i in range(100):
-        output = run_on_instance(FLAGS, i, sav_dir)
-        # if FLAGS.model_name != 'quickdraw' or output['success']:
-        #     save_run(FLAGS, output)
+    	# Pass a sav_dir below to save separate output files for each sequence searched
+    	# This is useful for running it in a distributed manner
+        output = run_on_instance(FLAGS, i, sav_dir=None)
+
+        if FLAGS.model_name != 'quickdraw' or output['success']:
+            save_filename = os.path.join(sav_dir, ('run_%s.json' % (output['idx'])))
+            json.dump(output, open(save_filename, 'w+'), indent=4)
